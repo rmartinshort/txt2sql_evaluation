@@ -1,0 +1,173 @@
+{
+  "databases": {
+    "minidev:california_schools": {
+      "db_id": "california_schools",
+      "sha256": "c0903eec662e63068fd1d14403d3d6c1d473287fc10c4356333ea58f878db983",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:card_games": {
+      "db_id": "card_games",
+      "sha256": "c98bdb57fe7474da798b407785544b9af0daaad5d61fd21e2a73309493bc1227",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:codebase_community": {
+      "db_id": "codebase_community",
+      "sha256": "92101be6d2a9f6adceea59d38f6d1c556087f9eea1432432a21268cb1348036d",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:debit_card_specializing": {
+      "db_id": "debit_card_specializing",
+      "sha256": "b3d149ad05746dbbe5116e229e17e18f09c39db43cf117d9ef3441753608b691",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:european_football_2": {
+      "db_id": "european_football_2",
+      "sha256": "f72f5c9b990371417288a67b27a02e601ef904d45525c2c9f7931fb01001c536",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:financial": {
+      "db_id": "financial",
+      "sha256": "d15d89cdb068a202b6f2b99342af44dffc1d52545b39ceaf62efdc0ba570101e",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:formula_1": {
+      "db_id": "formula_1",
+      "sha256": "79770caf966707e35516fa566e24b40ae515c74ec1ec4631235245645b87b24d",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:student_club": {
+      "db_id": "student_club",
+      "sha256": "eb89bcfe97eefa386a27904ec5aa15159811a7eac894ec659a36e48fa9f76b77",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:superhero": {
+      "db_id": "superhero",
+      "sha256": "75e94a2c3236ee3bb2c01fb97a1c4b4c1c269bcefd4eab1d04be323d2d0825b1",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:thrombosis_prediction": {
+      "db_id": "thrombosis_prediction",
+      "sha256": "87583183c3dc472fba04de702965560a9d7c0a548836613f242317e0eeb83f00",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    },
+    "minidev:toxicology": {
+      "db_id": "toxicology",
+      "sha256": "35ef27ae6bdfda530e125ed369666ac0abb8bc8c0bcc0ad09407f547ecb61a93",
+      "snapshot": "minidev",
+      "triggers": 0,
+      "views": 0
+    }
+  },
+  "entries": {
+    "data/dbs/california_schools/california_schools.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/california_schools/california_schools.sqlite",
+      "sha256": "c0903eec662e63068fd1d14403d3d6c1d473287fc10c4356333ea58f878db983"
+    },
+    "data/dbs/card_games/card_games.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/card_games/card_games.sqlite",
+      "sha256": "c98bdb57fe7474da798b407785544b9af0daaad5d61fd21e2a73309493bc1227"
+    },
+    "data/dbs/codebase_community/codebase_community.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/codebase_community/codebase_community.sqlite",
+      "sha256": "92101be6d2a9f6adceea59d38f6d1c556087f9eea1432432a21268cb1348036d"
+    },
+    "data/dbs/debit_card_specializing/debit_card_specializing.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/debit_card_specializing/debit_card_specializing.sqlite",
+      "sha256": "b3d149ad05746dbbe5116e229e17e18f09c39db43cf117d9ef3441753608b691"
+    },
+    "data/dbs/european_football_2/european_football_2.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/european_football_2/european_football_2.sqlite",
+      "sha256": "f72f5c9b990371417288a67b27a02e601ef904d45525c2c9f7931fb01001c536"
+    },
+    "data/dbs/financial/financial.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/financial/financial.sqlite",
+      "sha256": "d15d89cdb068a202b6f2b99342af44dffc1d52545b39ceaf62efdc0ba570101e"
+    },
+    "data/dbs/formula_1/formula_1.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/formula_1/formula_1.sqlite",
+      "sha256": "79770caf966707e35516fa566e24b40ae515c74ec1ec4631235245645b87b24d"
+    },
+    "data/dbs/student_club/student_club.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/student_club/student_club.sqlite",
+      "sha256": "eb89bcfe97eefa386a27904ec5aa15159811a7eac894ec659a36e48fa9f76b77"
+    },
+    "data/dbs/superhero/superhero.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/superhero/superhero.sqlite",
+      "sha256": "75e94a2c3236ee3bb2c01fb97a1c4b4c1c269bcefd4eab1d04be323d2d0825b1"
+    },
+    "data/dbs/thrombosis_prediction/thrombosis_prediction.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/thrombosis_prediction/thrombosis_prediction.sqlite",
+      "sha256": "87583183c3dc472fba04de702965560a9d7c0a548836613f242317e0eeb83f00"
+    },
+    "data/dbs/toxicology/toxicology.sqlite": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/dbs/toxicology/toxicology.sqlite",
+      "sha256": "35ef27ae6bdfda530e125ed369666ac0abb8bc8c0bcc0ad09407f547ecb61a93"
+    },
+    "data/e5b_items.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/e5b_items.jsonl",
+      "sha256": "1ffa6f929088ae5824c94e344fa2bf35964878b1cc67f812fb8fdcf5367270a2"
+    },
+    "data/items.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/items.jsonl",
+      "sha256": "77f4ad203fe49d58df6ca0f4b21d54418d836854131f2843360d635aeca71a32"
+    },
+    "data/raw/experts_agreement_200.csv": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/raw/experts_agreement_200.csv",
+      "sha256": "363e1df7bc0cfbb895f2474c58d8b1194ec05df074e3d98655b52a263395a41c"
+    },
+    "data/raw/flex_fn.jsonl": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/raw/flex_fn.jsonl",
+      "sha256": "5fefdbd8151e46162a3bcf55d5084eb989f4d9b4dc18bf737e92853d23e8a0bd"
+    },
+    "data/raw/flex_fp.jsonl": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/raw/flex_fp.jsonl",
+      "sha256": "5eaed6f39a841eaedac331ebfb0d3ddfdf299afc89ade792c2dab83c99ecee8c"
+    },
+    "data/raw/mini_dev_sqlite.json": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/raw/mini_dev_sqlite.json",
+      "sha256": "88ceb0710163cae46a256ecea8f0a8c98286599530b60587fda5c3cfe57d45d2"
+    },
+    "data/raw/minidev.zip": {
+      "kind": "pinned_download",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/raw/minidev.zip",
+      "sha256": "aeb211c0e39010bbdae3838bb5e8bd27dc446ed77495b1709f85ccc9bf67f2be"
+    }
+  }
+}
