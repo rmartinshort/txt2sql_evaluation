@@ -98,7 +98,7 @@ def _single_pass_stats(pairs: list[tuple[LabelledItem, Verdict]]) -> dict[str, A
     """Compute label x verdict counts, coverage, pass/fail rates, kappa, cost, and latency."""
     counts: dict[str, dict[str, int]] = {
         lbl: {"CORRECT": 0, "INCORRECT": 0, "AMBIGUOUS": 0, "ABSTAIN": 0}
-        for lbl in ("correct", "incorrect", "ambiguous")
+        for lbl in ("correct", "incorrect", "ambiguous", "unlabelled")
     }
     gt_wrong_count = 0
     valid_pairs: list[tuple[LabelledItem, Verdict]] = []
@@ -107,13 +107,17 @@ def _single_pass_stats(pairs: list[tuple[LabelledItem, Verdict]]) -> dict[str, A
         if it.label == "gt_wrong":
             gt_wrong_count += 1
             continue
-        counts[it.label][v.label] += 1
+        counts.setdefault(
+            it.label, {"CORRECT": 0, "INCORRECT": 0, "AMBIGUOUS": 0, "ABSTAIN": 0}
+        )[v.label] += 1
         valid_pairs.append((it, v))
 
     n_valid = len(valid_pairs)
     n_correct = sum(counts["correct"].values())
     n_incorrect = sum(counts["incorrect"].values())
     n_ambig = sum(counts["ambiguous"].values())
+    n_unlabelled = sum(counts["unlabelled"].values())
+    n_labelled = n_correct + n_incorrect + n_ambig
 
     fp = _safe_div(counts["incorrect"]["CORRECT"], n_incorrect)
     ff = _safe_div(counts["correct"]["INCORRECT"], n_correct)
@@ -137,7 +141,8 @@ def _single_pass_stats(pairs: list[tuple[LabelledItem, Verdict]]) -> dict[str, A
         1 for _, v in valid_pairs if v.label == "ABSTAIN" and v.reason in INFRA_ABSTAIN_REASONS
     )
 
-    decided_pairs = [(it.label, v.label) for it, v in valid_pairs if v.label != "ABSTAIN"]
+    labelled_valid_pairs = [(it, v) for it, v in valid_pairs if it.label != "unlabelled"]
+    decided_pairs = [(it.label, v.label) for it, v in labelled_valid_pairs if v.label != "ABSTAIN"]
     n_decided_match = sum(
         1
         for t, p in decided_pairs
@@ -146,7 +151,7 @@ def _single_pass_stats(pairs: list[tuple[LabelledItem, Verdict]]) -> dict[str, A
         or (t == "ambiguous" and p == "AMBIGUOUS")
     )
     acc_decided = _safe_div(n_decided_match, len(decided_pairs))
-    acc_all = _safe_div(n_decided_match, n_valid)
+    acc_all = _safe_div(n_decided_match, n_labelled)
     kappa = _cohens_kappa_3class(decided_pairs)
 
     billed = [v.cost_billed_usd for _, v in valid_pairs]
@@ -165,13 +170,46 @@ def _single_pass_stats(pairs: list[tuple[LabelledItem, Verdict]]) -> dict[str, A
         else False
     )
 
+    tot_correct_v = sum(counts[k]["CORRECT"] for k in counts)
+    tot_incorrect_v = sum(counts[k]["INCORRECT"] for k in counts)
+    tot_ambig_v = sum(counts[k]["AMBIGUOUS"] for k in counts)
+    tot_abstain_v = sum(counts[k]["ABSTAIN"] for k in counts)
+
     return {
         "n_items": n_valid,
         "gt_wrong_excluded": gt_wrong_count,
         "n_correct": n_correct,
         "n_incorrect": n_incorrect,
         "n_ambiguous": n_ambig,
+        "n_unlabelled": n_unlabelled,
+        "has_ground_truth_labels": n_labelled > 0,
         "counts": counts,
+        "assessment": {
+            "CORRECT": tot_correct_v,
+            "INCORRECT": tot_incorrect_v,
+            "AMBIGUOUS": tot_ambig_v,
+            "ABSTAIN": tot_abstain_v,
+            "prop_correct": _safe_div(tot_correct_v, n_valid),
+            "prop_correct_lenient": _safe_div(tot_correct_v + tot_ambig_v, n_valid),
+            "prop_incorrect": _safe_div(tot_incorrect_v, n_valid),
+            "prop_ambiguous": _safe_div(tot_ambig_v, n_valid),
+            "prop_abstain": _safe_div(tot_abstain_v, n_valid),
+        },
+        "stage_breakdown": {
+            "deterministic": _safe_div(
+                sum(1 for _, v in valid_pairs if v.decided_by.startswith("rule:")), n_valid
+            ),
+            "jev": _safe_div(
+                sum(1 for _, v in valid_pairs if v.decided_by == "jev"), n_valid
+            ),
+            "escalation": _safe_div(
+                sum(1 for _, v in valid_pairs if v.decided_by == "escalation"), n_valid
+            ),
+            "baseline": _safe_div(
+                sum(1 for _, v in valid_pairs if v.decided_by == "baseline"), n_valid
+            ),
+            "abstain": _safe_div(n_abstain, n_valid),
+        },
         "false_pass": fp,
         "false_fail": ff,
         "correct_pass_strict": cp_strict,
@@ -401,3 +439,60 @@ def compute_e2_rules_table(
         if expected is not None and v.label != expected:
             stats[v.decided_by]["wrong"] += 1
     return stats
+
+
+def compute_assessment_summary(
+    items: list[LabelledItem],
+    verdicts_by_method: dict[str, dict[str, Verdict]],
+) -> dict[str, Any]:
+    """Compute full-run judge assessment and accuracy breakdowns overall and by mode/set/db.
+
+    Works identically for labelled judge-benchmark runs (reporting accuracy + error rates +
+    verdict proportions) and unlabelled agent-evaluation runs (reporting the proportion of
+    agent answers judged CORRECT, INCORRECT, AMBIGUOUS, and ABSTAIN).
+    """
+    valid_items = [it for it in items if it.label != "gt_wrong"]
+    sets_present = sorted({it.set for it in valid_items})
+    dbs_present = sorted({it.trace.db_id for it in valid_items if it.trace.db_id})
+
+    overall: dict[str, Any] = {}
+    by_mode: dict[str, dict[str, Any]] = {}
+    by_set: dict[str, dict[str, Any]] = {}
+    by_db: dict[str, dict[str, Any]] = {}
+
+    for method, vmap in verdicts_by_method.items():
+        overall[method] = compute_method_metrics(valid_items, vmap, bootstrap_resamples=0)
+
+    for mode in ("sql_only", "full_trace"):
+        m_items = [
+            it
+            for it in valid_items
+            if (it.trace.final_answer is not None) == (mode == "full_trace")
+        ]
+        if not m_items:
+            continue
+        by_mode[mode] = {
+            method: compute_method_metrics(m_items, vmap, bootstrap_resamples=0)
+            for method, vmap in verdicts_by_method.items()
+        }
+
+    for s_name in sets_present:
+        s_items = [it for it in valid_items if it.set == s_name]
+        by_set[s_name] = {
+            method: compute_method_metrics(s_items, vmap, bootstrap_resamples=0)
+            for method, vmap in verdicts_by_method.items()
+        }
+
+    for db_id in dbs_present:
+        d_items = [it for it in valid_items if it.trace.db_id == db_id]
+        by_db[db_id] = {
+            method: compute_method_metrics(d_items, vmap, bootstrap_resamples=0)
+            for method, vmap in verdicts_by_method.items()
+        }
+
+    return {
+        "overall": overall,
+        "by_mode": by_mode,
+        "by_set": by_set,
+        "by_db": by_db,
+    }

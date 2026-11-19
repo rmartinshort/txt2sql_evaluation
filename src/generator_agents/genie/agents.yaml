@@ -1,0 +1,23 @@
+# Allowed Databricks Genie Agents for the Genie Agent Orchestrator.
+# The orchestrator pulls each agent's live title and description from Databricks
+# using these IDs so the Gemini Decision Model (`gemini-decision-1`) knows what
+# each agent can answer. Comment out or remove any ID to exclude it from routing.
+
+databricks_host: https://dbc-89003fab-33b9.cloud.databricks.com
+databricks_profile: DEFAULT
+router_model: gemini-decision-1
+execution_mode: STANDARD
+
+agents:
+  - 01f0472763741cd5a42a7539f1da4f32  # Bakehouse Sales Starter Space
+  - 01f1e31b1a7d11e98e2d62461778a67b  # Text2SQL - superhero
+  - 01f1e31b1a7d1210ae1439c51010c453  # Text2SQL - student_club
+  - 01f1e31b1a7d11c78453a040b18eb30a  # Text2SQL - thrombosis_prediction
+  - 01f1e31b1a7d132ab221556ab880fc89  # Text2SQL - toxicology
+  - 01f1e31b1a7d11e88538ed5f43d169f1  # Text2SQL - debit_card_specializing
+  - 01f1e31b1a7d14a887f7d55f6be0dce7  # Text2SQL - codebase_community
+  - 01f1e31b1a7d13fdafa09d6a7e12b168  # Text2SQL - card_games
+  - 01f1e31b1a7d1246ad987621d84ea68c  # Text2SQL - california_schools
+  - 01f1e31b1a7d125abb9aabce8d308e1b  # Text2SQL - financial
+  - 01f1e31b1a7d148d8d39bc627c84d20b  # Text2SQL - european_football_2
+  - 01f1e31b1a7d140c9c56646d790057ed  # Text2SQL - formula_1

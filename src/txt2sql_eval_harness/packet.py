@@ -188,6 +188,31 @@ def _trim_extra_witnesses(row_diff: dict[str, Any]) -> tuple[dict[str, Any], boo
     return trimmed, changed
 
 
+def _compact_claim_bindings(
+    claims: list[dict[str, Any]],
+    *,
+    max_claims: int = 40,
+    max_cells_per_side: int = 5,
+    max_derivs: int = 3,
+) -> tuple[list[dict[str, Any]], bool]:
+    """Compact excessive CLAIM bindings while preserving values, tables, and derivations."""
+    compacted: list[dict[str, Any]] = []
+    changed = len(claims) > max_claims
+    for raw in claims[:max_claims]:
+        item = dict(raw)
+        for key, cap in (
+            ("gt_cells", max_cells_per_side),
+            ("agent_cells", max_cells_per_side),
+            ("derivations", max_derivs),
+        ):
+            vals = item.get(key)
+            if isinstance(vals, list) and len(vals) > cap:
+                item[key] = vals[:cap]
+                changed = True
+        compacted.append(item)
+    return compacted, changed
+
+
 def build_packet(
     cand: PreparedCandidate,
     mode: ModeName,
@@ -351,6 +376,30 @@ def build_packet(
             trimmed_obj = dict(base_obj)
             trimmed_obj["ROW_DIFF"] = trimmed_rd
             truncated.append("extra_row_diff_witnesses")
+            state, n_cells, n_tokens, fits = _try_render(trimmed_obj)
+            return EvidencePacket(
+                tier=tier,
+                state=state,
+                n_cells=n_cells,
+                n_tokens=n_tokens,
+                required_met=fits,
+                truncated=truncated,
+                packet_sha256=hashlib.sha256(state.encode("utf-8")).hexdigest(),
+            )
+
+    # Cut order 3 (full_trace): compact repetitive CLAIMS bindings when cells fit within cap
+    if (
+        mode == "full_trace"
+        and n_cells <= max_cells
+        and "CLAIMS" in base_obj
+        and isinstance(base_obj["CLAIMS"], list)
+        and len(base_obj["CLAIMS"]) > 0
+    ):
+        compacted_claims, changed = _compact_claim_bindings(base_obj["CLAIMS"])
+        if changed:
+            trimmed_obj = dict(base_obj)
+            trimmed_obj["CLAIMS"] = compacted_claims
+            truncated.append("extra_claim_bindings")
             state, n_cells, n_tokens, fits = _try_render(trimmed_obj)
             return EvidencePacket(
                 tier=tier,

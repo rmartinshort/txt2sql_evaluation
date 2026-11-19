@@ -1,6 +1,16 @@
-# Code Review: `src/txt2sql_eval_harness`
+# Code Review: `src/txt2sql_eval_harness` & `src/generator_agents`
 
-Reviewer notes for the author of the code. Scope: all of `src/` (about 10.3k lines, 22 modules). The test suite passes (33 tests).
+> **Status Update (2026-11-18):**
+> - **Historical harness items resolved:** H1 (`claims.py` case-insensitive multipliers), H2 (`runner.py` skips persisting `internal_error` and logs tracebacks + prefights keys), H3 (`cli.py`/`runner.py` enforce manifest check), H4 (`judge.py` `prepare_best_candidate` ranks by `_RELATION_RANK`), H5 (`runner.py` runs `fit_thresholds` on calibration split; S5 traces produced by `generator_agents`), M3 (`sql_analysis.py` strips comments/literals before `is_volatile`), M7/M8 (`clients.py` reads `EvalConfig` retry/timeout fields and passes `HttpOptions(timeout=...)`), M9 (item-major runner), M11 (`IncompatibleRunDirError` lists mismatched fields), and L1 (`sandbox.py` checks `SQLITE_NOMEM`).
+> - **`src/generator_agents/` added:** Consolidates `genie/` (Databricks Genie Agent Mode SSE client, `agents.yaml` allowlist + live description pull, `gemini-decision-1` router, `GenieOrchestrator`, and S5 generator) alongside `langchain/`.
+> - **Seam & packet fixes applied:**
+>   1. `generator_agents/genie/client.py`: `parse_markdown_table` handles `"No results"` outputs as empty complete tables `([], [])` and parses comma-formatted numbers (`1,408`).
+>   2. `generator_agents/genie/generator.py`: Strips Databricks citation links (`[1](https://...)`) from `Trace.final_answer` (preserving raw citations in `.genie_responses.jsonl`) and sets `allow_none=False` during benchmark generation.
+>   3. `generator_agents/genie/router.py` & `orchestrator.py`: Added `allow_none` control for `GeminiDecisionRouter`.
+>   4. `txt2sql_eval_harness/judge.py`: Updated `full_trace` `all_complete` so multi-step self-correction traces (with an early failed/empty step followed by a complete step) and volatile GT SQL do not falsely abstain as `incomplete_evidence`.
+>   5. `txt2sql_eval_harness/packet.py`: Added `extra_claim_bindings` cut stage in `full_trace` mode when `n_cells <= max_cells` and `n_tokens > max_tokens` (preserving `evidence_exceeds_bound` for cell-overflow packets).
+
+Reviewer notes for the author of the code (original baseline review below). Scope: all of `src/` (about 10.3k lines, 22 modules). The test suite passes (33 tests).
 
 **Depth of review:**
 - Read in full: `judge.py`, `runner.py`, `claims.py`, `comparator.py`, `sandbox.py`, `sql_analysis.py`, `clients.py`, `spend.py`, `cache.py`, `metrics.py`, `alignment.py` (the `align_tables` flow and helpers).

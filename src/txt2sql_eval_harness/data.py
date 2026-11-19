@@ -311,6 +311,7 @@ def load_flex_dataset(
     items: list[LabelledItem] = []
     stats = {"loaded": 0, "excluded_consensus_tie": 0, "missing_db": 0, "invalid_label": 0}
     db_hashes: dict[str, str] = {}
+    seen_item_ids: dict[str, int] = {}
 
     for family, path in (("flex_fp", fp_jsonl), ("flex_fn", fn_jsonl)):
         if not path.exists():
@@ -385,7 +386,10 @@ def load_flex_dataset(
 
                 gid = compute_group_id(db_id, question)
                 split = assign_split(gid)
-                item_id = f"s4:{family}:{row_id}"
+                base_item_id = f"s4:{family}:{row_id}"
+                occ = seen_item_ids.get(base_item_id, 0)
+                seen_item_ids[base_item_id] = occ + 1
+                item_id = base_item_id if occ == 0 else f"{base_item_id}:{occ}"
                 items.append(
                     LabelledItem(
                         item_id=item_id,

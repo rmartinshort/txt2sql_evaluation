@@ -206,7 +206,7 @@ def decode_labelled_item(raw: dict[str, Any]) -> LabelledItem:
         slices=list(raw.get("slices", [])),
         trace=decode_trace(raw["trace"]),
         gt=decode_gt(raw["gt"]),
-        label=raw["label"],
+        label=raw.get("label") or "unlabelled",
         pair_of=raw.get("pair_of"),
         method_ok_label=raw.get("method_ok_label"),
         snapshot=str(raw.get("snapshot", "minidev")),
