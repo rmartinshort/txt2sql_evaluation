@@ -520,8 +520,10 @@ def test_preflight_missing_api_key_and_cli_missing_manifest(tmp_path: Path, monk
 
     cfg = EvalConfig()
     item = _sql_item("k1")
-    with pytest.raises(RuntimeError, match="TYPESAFE_API_KEY"):
+    with pytest.raises(RuntimeError, match="GEMINI_API_KEY"):
         run_experiment([item], ["H+E"], cfg, tmp_path / "exp_k", tmp_path / "run_k")
+    with pytest.raises(RuntimeError, match="TYPESAFE_API_KEY"):
+        run_experiment([item], ["H+E"], EvalConfig(jev_model="jev-1.14.0"), tmp_path / "exp_k2", tmp_path / "run_k2")
 
     # CLI run without --local-only and missing manifest must fail closed
     items_path = tmp_path / "items.jsonl"
@@ -684,3 +686,27 @@ def test_concurrent_runner_and_calibration_threshold_fitting(tmp_path: Path) -> 
     assert recs["H+E"]["test_0"].label == "CORRECT"
     assert recs["H+E"]["test_0"].decided_by == "jev"
     assert not recs["H+E"]["test_0"].escalated
+
+
+def test_gemini_decision_client_normalization_and_validation() -> None:
+    from types import SimpleNamespace
+    from txt2sql_eval_harness.clients import GeminiDecisionClient, validate_jev_response
+
+    fake_resp = SimpleNamespace(
+        answers={
+            "Q1": SimpleNamespace(noul=0.92),
+            "Q5": SimpleNamespace(
+                probabilities={
+                    "not_ambiguous": 0.95,
+                    "ambiguous_generated_reasonable": 0.03,
+                    "ambiguous_generated_unreasonable": 0.02,
+                }
+            ),
+        }
+    )
+    normalized_payload = {"answers": GeminiDecisionClient._normalize_response_answers(fake_resp)}
+    parsed, err = validate_jev_response(normalized_payload, ["Q1", "Q5"])
+    assert err is None
+    assert parsed is not None
+    assert parsed["Q1"] == pytest.approx(0.92)
+    assert parsed["Q5"]["not_ambiguous"] == pytest.approx(0.95)

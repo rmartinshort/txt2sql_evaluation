@@ -139,10 +139,70 @@
       "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/e5b_items.jsonl",
       "sha256": "1ffa6f929088ae5824c94e344fa2bf35964878b1cc67f812fb8fdcf5367270a2"
     },
+    "data/genie_100.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/genie_100.jsonl",
+      "sha256": "c69d6159afba975f584f9f4934873a23399432401eb25162262bcbd05c451cb9"
+    },
+    "data/genie_test_5.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/genie_test_5.jsonl",
+      "sha256": "0a3b03fae21cff7c22c7d2a2698c4cded14d94ad015a25469ccb1ca594d1be2b"
+    },
     "data/items.jsonl": {
       "kind": "harness_derivative",
       "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/items.jsonl",
       "sha256": "77f4ad203fe49d58df6ca0f4b21d54418d836854131f2843360d635aeca71a32"
+    },
+    "data/langchain_gemini.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/langchain_gemini.jsonl",
+      "sha256": "1baf82dfe5fc84bd4e47312159370c2f99e0b8e070a87bcf4a0992364d2e2b8f"
+    },
+    "data/langchain_gemini25_lite.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/langchain_gemini25_lite.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "data/langchain_gemini35_lite.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/langchain_gemini35_lite.jsonl",
+      "sha256": "ea42ec3f28eb230caeea73075d712e634c15875addd9f1cace5af89dd6bdbb2a"
+    },
+    "data/langchain_gemini4_argon.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/langchain_gemini4_argon.jsonl",
+      "sha256": "72e687536b029ad636d8aa77d3a8f04cb70be701231748e6dca8b18a6779dc53"
+    },
+    "data/lc_35_flash_i20.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/lc_35_flash_i20.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "data/lc_35_flash_i50.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/lc_35_flash_i50.jsonl",
+      "sha256": "b9486a9602bbab190d18e52430ac817fbba8d9a2d879a92ec74995a17b36d91b"
+    },
+    "data/lc_35_lite_i20.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/lc_35_lite_i20.jsonl",
+      "sha256": "1a0f20a47c680cc0a2da4d30edffc2782c0a83f0eb73f355fca40fd4079c6921"
+    },
+    "data/lc_35_lite_i50.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/lc_35_lite_i50.jsonl",
+      "sha256": "c8119d60a037b3d8ef8da521dddae64d37a3b8be9c9932889f0b9b515717224a"
+    },
+    "data/lc_4_argon_i20.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/lc_4_argon_i20.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "data/lc_4_argon_i50.jsonl": {
+      "kind": "harness_derivative",
+      "resolved_path": "/Users/rmartinshort/orca/workspaces/txt2sql_eval_harness/anemone/data/lc_4_argon_i50.jsonl",
+      "sha256": "9458fed2a6dfe2766c1aa4f7508410859970ad1dece993cead9f5e8af615ef62"
     },
     "data/raw/experts_agreement_200.csv": {
       "kind": "pinned_download",

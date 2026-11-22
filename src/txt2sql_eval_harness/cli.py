@@ -23,6 +23,8 @@ from txt2sql_eval_harness.generators import (
 )
 from txt2sql_eval_harness.metrics import load_records
 from txt2sql_eval_harness.models import (
+    DEFAULT_AGENT_MODEL,
+    DEFAULT_JEV_MODEL,
     EvalConfig,
     GroundTruth,
     LabelledItem,
@@ -128,6 +130,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_gen.add_argument("--out", type=Path, default=Path("data/items.jsonl"))
     p_gen.add_argument("--e5b-out", type=Path, default=Path("data/e5b_items.jsonl"))
 
+    p_lc = sub.add_parser(
+        "generate-langchain",
+        help="Run LangChain SQL agent on benchmark questions to produce S5 evaluation items.",
+    )
+    p_lc.add_argument("--dataset", choices=["bird", "flex"], default="bird")
+    p_lc.add_argument("--data-dir", type=Path, default=Path("data"))
+    p_lc.add_argument("--model", type=str, default=DEFAULT_AGENT_MODEL)
+    p_lc.add_argument("--temperature", type=float, default=0.0)
+    p_lc.add_argument("--limit", type=int, default=20)
+    p_lc.add_argument("--seed", type=int, default=42)
+    p_lc.add_argument("--split", choices=["all", "calibration", "test"], default="test")
+    p_lc.add_argument("--db-id", type=str, default=None)
+    p_lc.add_argument("--max-iterations", type=int, default=50)
+    p_lc.add_argument("--sql-only", action="store_true")
+    p_lc.add_argument("--concurrency", type=int, default=8)
+    p_lc.add_argument("--verbose", action="store_true")
+    p_lc.add_argument("--out", type=Path, default=Path("data/langchain_items.jsonl"))
+
     p_run = sub.add_parser("run", help="Run evaluation methods over an items JSONL.")
     p_run.add_argument("--items", type=Path, required=True)
     p_run.add_argument("--root", type=Path, default=Path("experiments/default"))
@@ -140,7 +160,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_run.add_argument("--enable-d5", action="store_true")
     p_run.add_argument("--subset-c", action="store_true")
     p_run.add_argument("--cap-usd", type=float, default=150.0)
+    p_run.add_argument("--decision-model", type=str, default=DEFAULT_JEV_MODEL)
     p_run.add_argument("--concurrency", type=int, default=8)
+    p_run.add_argument("--verbose", action="store_true")
 
     p_rep = sub.add_parser("report", help="Generate T1-T6 tables and F2-F6 charts.")
     p_rep.add_argument("--items", type=Path, required=True)
@@ -207,7 +229,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.command == "run":
-        cfg = EvalConfig(enable_d5=bool(args.enable_d5))
+        cfg = EvalConfig(enable_d5=bool(args.enable_d5), jev_model=args.decision_model)
         items = _load_items_jsonl(args.items)
         if args.subset_c:
             items = select_common_subset_c(items)
@@ -224,6 +246,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             cache_only=bool(args.cache_only),
             cap_usd=float(args.cap_usd),
             concurrency=int(args.concurrency),
+            verbose=bool(args.verbose),
         )
         print(
             json.dumps(
@@ -252,6 +275,47 @@ def main(argv: Sequence[str] | None = None) -> int:
             bootstrap_resamples=int(args.bootstrap_resamples),
         )
         print(json.dumps({"tables": list(out.keys()), "out_dir": str(args.out_dir)}, indent=2))
+        return 0
+
+    if args.command == "generate-langchain":
+        from txt2sql_eval_harness.langchain_agent import build_chat_model, generate_langchain_items
+
+        manifest = args.data_dir / "manifest.json"
+        raw_dir = args.data_dir / "raw"
+        db_dir = args.data_dir / "dbs"
+        cfg = EvalConfig()
+
+        if args.dataset == "bird":
+            bird_records, _ = load_bird_mini_dev(raw_dir / "mini_dev_sqlite.json", db_dir)
+            base_items = _bird_records_to_items(bird_records, cfg)
+        else:
+            base_items, _ = load_flex_dataset(
+                raw_dir / "flex_fp.jsonl",
+                raw_dir / "flex_fn.jsonl",
+                db_dir,
+                experts_csv=raw_dir / "experts_agreement_200.csv",
+            )
+
+        llm = build_chat_model(model=args.model, temperature=float(args.temperature))
+        _, stats = generate_langchain_items(
+            base_items,
+            db_dir,
+            llm,
+            args.model,
+            cfg=cfg,
+            limit=int(args.limit),
+            seed=int(args.seed),
+            split=args.split,
+            db_id=args.db_id,
+            max_iterations=int(args.max_iterations),
+            sql_only=bool(args.sql_only),
+            concurrency=int(args.concurrency),
+            verbose=bool(args.verbose),
+            out_path=args.out,
+        )
+        if manifest.exists():
+            record_manifest_entry(manifest, args.out, "harness_derivative")
+        print(json.dumps({**stats, "out": str(args.out)}, indent=2))
         return 0
 
     return 1

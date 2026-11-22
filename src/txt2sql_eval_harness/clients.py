@@ -422,12 +422,91 @@ def _get_api_key(var_name: str) -> str | None:
 _CLIENT_LOCK = threading.Lock()
 
 
+class GeminiDecisionClient:
+    """Decision transport using google-genai Decisions API (gemini-decision-1)."""
+
+    def __init__(self, api_key: str, model: str) -> None:
+        """Initialize the Gemini Decisions client using GEMINI_API_KEY and v1beta API."""
+        from google import genai
+
+        self.model = model
+        self._client = genai.Client(
+            api_key=api_key,
+            http_options={"api_version": "v1beta"},
+        )
+
+    @staticmethod
+    def _normalize_response_answers(resp: Any) -> dict[str, Any]:
+        """Convert CreateDecisionResponse.answers into a dict compatible with validate_jev_response."""
+        raw_answers = getattr(resp, "answers", None) or {}
+        out: dict[str, Any] = {}
+        for qname, ans in raw_answers.items():
+            if hasattr(ans, "noul") and getattr(ans, "noul") is not None:
+                out[str(qname)] = {"noul": float(ans.noul)}
+            elif hasattr(ans, "probabilities") and getattr(ans, "probabilities") is not None:
+                out[str(qname)] = {
+                    "probabilities": {str(k): float(v) for k, v in ans.probabilities.items()}
+                }
+        return out
+
+    def send(self, request: dict[str, Any], *, timeout: float) -> RawModelResponse:
+        """Send a Gemini Decisions API request and normalize the response."""
+        from google.genai import errors as genai_errors
+
+        try:
+            resp = self._client.decisions.create(
+                model=self.model,
+                input=request["state"],
+                questions=request["questions"],
+            )
+        except TimeoutError:
+            return RawModelResponse(http_ok=False, status_code=None, transport_error="timeout")
+        except ConnectionRefusedError:
+            return RawModelResponse(
+                http_ok=False, status_code=None, transport_error="connect_refused"
+            )
+        except ConnectionError:
+            return RawModelResponse(
+                http_ok=False, status_code=None, transport_error="connection_lost"
+            )
+        except genai_errors.APIError as exc:
+            code = getattr(exc, "code", None)
+            status = int(code) if isinstance(code, int) else 500
+            return RawModelResponse(http_ok=False, status_code=status)
+        except Exception as exc:
+            if "timeout" in type(exc).__name__.lower() or "timed out" in str(exc).lower():
+                return RawModelResponse(http_ok=False, status_code=None, transport_error="timeout")
+            return RawModelResponse(
+                http_ok=False, status_code=None, transport_error="connection_lost"
+            )
+
+        answers = self._normalize_response_answers(resp)
+        usage = getattr(resp, "usage", None)
+        in_tok = getattr(usage, "total_input_tokens", None) if usage is not None else None
+        return RawModelResponse(
+            http_ok=True,
+            status_code=200,
+            payload={"answers": answers},
+            input_tokens=int(in_tok) if in_tok is not None else None,
+            output_tokens=0,
+        )
+
+
 def client_for(backend: str, model: str, ctx: CallContext) -> ModelTransport:
     """Lazy factory — ONLY location permitted to read API-key env vars or construct SDK clients."""
     with _CLIENT_LOCK:
         if backend in ctx.clients:
             return ctx.clients[backend]
         if backend == "jev":
+            if model.startswith("gemini-decision"):
+                api_key = _get_api_key("GEMINI_API_KEY")
+                if not api_key:
+                    raise RuntimeError(
+                        "GEMINI_API_KEY is required for remote Gemini Decision calls"
+                    )
+                dec_client: ModelTransport = GeminiDecisionClient(api_key=api_key, model=model)
+                ctx.clients[backend] = dec_client
+                return dec_client
             api_key = _get_api_key("TYPESAFE_API_KEY")
             if not api_key:
                 raise RuntimeError("TYPESAFE_API_KEY is required for remote Jev calls")

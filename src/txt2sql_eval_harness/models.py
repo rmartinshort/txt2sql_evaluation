@@ -270,7 +270,7 @@ class LabelledItem:
     slices: list[str]
     trace: Trace
     gt: GroundTruth
-    label: Literal["correct", "incorrect", "ambiguous", "gt_wrong"]
+    label: Literal["correct", "incorrect", "ambiguous", "gt_wrong", "unlabelled"] = "unlabelled"
     pair_of: str | None = None
     method_ok_label: bool | None = None
     snapshot: str = "minidev"
@@ -333,11 +333,12 @@ class ModelPricing:
     output_per_m: float
 
 
-DEFAULT_JEV_MODEL = "jev-1.14.0"
+DEFAULT_JEV_MODEL = "gemini-decision-1"
 DEFAULT_GENERATIVE_MODEL = "gemini-4-argon"
 DEFAULT_AGENT_MODEL = "gemini-3.8-flash"
 
 DEFAULT_PRICING: dict[str, ModelPricing] = {
+    "gemini-decision-1": ModelPricing(input_per_m=0.10, output_per_m=0.0),
     "jev-1.14.0": ModelPricing(input_per_m=0.042, output_per_m=0.0),
     "gemini-4-argon": ModelPricing(input_per_m=3.0, output_per_m=15.0),
     "gemini-3.8-flash": ModelPricing(input_per_m=0.75, output_per_m=3.75),

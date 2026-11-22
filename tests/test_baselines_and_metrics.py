@@ -308,8 +308,11 @@ def test_coverage_report_fixture_ambiguous_e5b_and_charts(tmp_path: Path) -> Non
         bootstrap_resamples=20,
     )
     assert "coverage_limited" == rep["T2"]["full_trace"]["h6_reading_HE_vs_B4"]["status"]
+    assert (rep_dir / "F1_judge_overview.png").exists()
     assert (rep_dir / "F2_cost_tradeoff.png").exists()
     assert (rep_dir / "F6_jev_probabilities.png").exists()
+    assert (rep_dir / "SUMMARY.md").exists()
+    assert "Assessment" in rep and "T2_all" in rep
 
 
 def test_b2_and_ibm_subset_abstain_on_incomplete_tables() -> None:
@@ -328,3 +331,63 @@ def test_b2_and_ibm_subset_abstain_on_incomplete_tables() -> None:
     gt_incomp = GroundTruth("inc2", ["SELECT a FROM t"], results=[incomp])
     assert judge_b2(tr_comp, gt_incomp, cfg).reason == "incomplete_evidence"
     assert judge_b_ibm_subset(tr_comp, gt_incomp, cfg).reason == "incomplete_evidence"
+
+
+def test_unlabelled_assessment_report_and_summary(tmp_path: Path) -> None:
+    from txt2sql_eval_harness.codec import decode_labelled_item, encode_labelled_item
+
+    u1 = LabelledItem(
+        "u1",
+        "gu1",
+        "test",
+        "S5",
+        "genie",
+        [],
+        Trace("u1", "gu1", "Sales?", "", "sales_db", "0", [Step(1, "SELECT 1")]),
+        GroundTruth("u1", ["SELECT 1"]),
+        "unlabelled",
+    )
+    raw = encode_labelled_item(u1)
+    del raw["label"]
+    decoded = decode_labelled_item(raw)
+    assert decoded.label == "unlabelled"
+
+    u2 = LabelledItem(
+        "u2",
+        "gu2",
+        "test",
+        "S5",
+        "genie",
+        [],
+        Trace("u2", "gu2", "Users?", "", "users_db", "0", [Step(1, "SELECT 2")], final_answer="There are 2 users."),
+        GroundTruth("u2", ["SELECT 1"]),
+        "unlabelled",
+    )
+    verdicts = {
+        "H+E": {
+            "u1": _make_verdict("u1", "H+E", "CORRECT", 0.0, mode="sql_only", decided_by="rule:D1"),
+            "u2": _make_verdict("u2", "H+E", "INCORRECT", 0.002, mode="full_trace", decided_by="escalation"),
+        }
+    }
+    rep_dir = tmp_path / "unlabelled_rep"
+    rep = generate_all_reports_and_figures(
+        rep_dir,
+        [decoded, u2],
+        [decoded, u2],
+        verdicts,
+        bootstrap_resamples=0,
+    )
+    overall = rep["Assessment"]["overall"]["H+E"]
+    assert overall["has_ground_truth_labels"] is False
+    assert overall["assessment"]["CORRECT"] == 1
+    assert overall["assessment"]["INCORRECT"] == 1
+    assert overall["assessment"]["prop_correct"] == 0.5
+    assert (rep_dir / "F1_judge_overview.png").exists()
+    assert (rep_dir / "F2_cost_tradeoff.png").exists()
+    assert (rep_dir / "F3_coincident.png").exists()
+    assert (rep_dir / "F4_large_tables.png").exists()
+    assert (rep_dir / "F5_final_answers.png").exists()
+    assert (rep_dir / "F6_jev_probabilities.png").exists()
+    summary_txt = (rep_dir / "SUMMARY.md").read_text(encoding="utf-8")
+    assert "Judge Assessment" in summary_txt
+    assert "Judge Accuracy vs. Ground-Truth Labels" not in summary_txt

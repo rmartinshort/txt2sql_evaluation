@@ -11,6 +11,7 @@ import logging
 import os
 from pathlib import Path
 import subprocess
+import sys
 import threading
 from typing import Any, Callable, Iterable
 
@@ -266,7 +267,7 @@ def fit_thresholds(
     # Collect calibration items whose Jev call succeeded and true label is in {"correct", "incorrect"}
     jev_items: list[tuple[LabelledItem, dict[str, Any], PreparedCandidate | None]] = []
     for item, verdict, cand in cal_records:
-        if item.split != "calibration" or item.label == "gt_wrong":
+        if item.split != "calibration" or item.label in ("gt_wrong", "unlabelled"):
             continue
         if verdict.mode != mode:
             continue
@@ -493,6 +494,7 @@ def run_experiment(
     clients: dict[str, Any] | None = None,
     sleep_fn: Callable[[float], Any] | None = None,
     concurrency: int = 1,
+    verbose: bool = False,
 ) -> RunSummary:
     """Resumable experiment runner enforcing lock, spend checkpoint, calibration fitting, and optional concurrency."""
     if concurrency < 1:
@@ -581,7 +583,12 @@ def run_experiment(
 
             if allow_remote and not cache_only:
                 if any(m in ("H+E", "B6", "B6+E") for m in methods) and "jev" not in ctx.clients:
-                    if not _get_api_key("TYPESAFE_API_KEY"):
+                    if cfg.jev_model.startswith("gemini-decision"):
+                        if not _get_api_key("GEMINI_API_KEY"):
+                            raise RuntimeError(
+                                "GEMINI_API_KEY is required for remote Gemini Decision calls"
+                            )
+                    elif not _get_api_key("TYPESAFE_API_KEY"):
                         raise RuntimeError("TYPESAFE_API_KEY is required for remote Jev calls")
                 if "B4" in methods and "generative" not in ctx.clients:
                     if not _get_api_key("GEMINI_API_KEY"):
@@ -615,16 +622,27 @@ def run_experiment(
                     done.add((item.item_id, method))
                     completed_records[(item.item_id, method)] = rec
                     written += 1
+                    if verbose:
+                        reason_s = f", reason={verdict.reason}" if verdict.reason else ""
+                        print(
+                            f"[{written}] {item.item_id} | {method} -> {verdict.label} "
+                            f"(decided_by={verdict.decided_by}{reason_s})",
+                            file=sys.stderr,
+                            flush=True,
+                        )
 
             def _run_phase(fh: Any, phase_items: list[LabelledItem]) -> None:
                 """Run all pending `(item, method)` pairs for *phase_items* serially or with bounded threads."""
                 nonlocal skipped, stopped_cap
                 pending: list[tuple[LabelledItem, RecordedMethodName]] = []
+                seen_pending: set[tuple[str, str]] = set(done)
                 for item in phase_items:
                     for method in methods:
-                        if (item.item_id, method) in done:
+                        key = (item.item_id, method)
+                        if key in seen_pending:
                             skipped += 1
                             continue
+                        seen_pending.add(key)
                         pending.append((item, method))
 
                 if concurrency == 1:

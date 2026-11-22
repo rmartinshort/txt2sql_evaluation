@@ -384,15 +384,16 @@ def _evaluate_candidate(
     else:
         has_ans = trace.final_answer is not None and trace.final_answer.strip() != ""
         no_evidence = (not has_any_sql_or_res) and (not has_ans)
-        all_complete = (
-            gt_res is not None
-            and gt_res.complete
-            and not gt_vol
-            and all(
-                (not sv) and st.error_kind is None and st.result is not None and st.result.complete
-                for st, sv in zip(steps, step_vols)
-            )
+        has_complete_step = any(
+            (not sv) and st.error_kind is None and st.result is not None and st.result.complete
+            for st, sv in zip(steps, step_vols)
         )
+        has_truncated_step = any(
+            st.result is not None and not st.result.complete
+            for st in steps
+        )
+        gt_ok = (gt_res is not None and gt_res.complete) or gt_vol
+        all_complete = gt_ok and (has_complete_step or not steps) and not has_truncated_step
 
     cand = PreparedCandidate(
         trace=trace,
@@ -817,10 +818,23 @@ def judge_item(
     *,
     db_path: Path | None = None,
     escalation: bool = True,
+    verbose: bool = False,
 ) -> Verdict:
     """Run the hybrid funnel judge for H+E, H, B6, or B6+E."""
+    _METHOD_DESCS = {
+        "H+E": "Full hybrid funnel: Stage 0-1 deterministic rules + Stage 2 packet + Stage 3 Jev (Q1-Q6) + Stage 4 Gemini escalation",
+        "H": "Hybrid funnel without escalation: Stage 0-1 deterministic rules + Stage 2 packet + Stage 3 Jev (Q1-Q6); abstains if uncertain",
+        "B6": "Single-question Jev (V) baseline without escalation",
+        "B6+E": "Single-question Jev (V) baseline with Gemini escalation",
+    }
+    if method not in _METHOD_DESCS:
+        raise ValueError(
+            f"Invalid method for judge_item: {method!r}. Expected one of {tuple(_METHOD_DESCS)}."
+        )
+    if verbose:
+        print(f"[Method: {method}] {_METHOD_DESCS[method]}")
     if method == "H":
-        he_v = judge_item(trace, gt, "H+E", ctx, db_path=db_path, escalation=escalation)
+        he_v = judge_item(trace, gt, "H+E", ctx, db_path=db_path, escalation=escalation, verbose=verbose)
         return derive_h_from_he(he_v)
 
     cfg = ctx.cfg
@@ -852,9 +866,20 @@ def judge_item(
         return _make_abstain(trace.trace_id, method, mode, "input_over_limit", cfg_hash, det_ms=det_ms)
 
     if cand is None or cand.no_evidence:
+        if verbose:
+            print(f"[Stage 0-1] mode={mode}: no_evidence -> ABSTAIN")
         return _make_abstain(trace.trace_id, method, mode, "no_evidence", cfg_hash, det_ms=det_ms, cand=cand)
 
+    if verbose:
+        print(
+            f"[Stage 0-1] mode={mode}, alignment={cand.alignment.relation}, "
+            f"claims={len(cand.claims)}, derivations={len(cand.derivations)}, "
+            f"flags={cand.flags}, rule_hit={cand.rule_hit.decided_by if cand.rule_hit else None}"
+        )
+
     if cand.rule_hit is not None:
+        if verbose:
+            print(f"[Stage 1] Short-circuit {cand.rule_hit.decided_by} -> {cand.rule_hit.label} ({cand.rule_hit.reason})")
         return replace(cand.rule_hit, det_ms=det_ms, latency_ms=det_ms)
 
     if mode == "full_trace" and not cand.all_complete:
@@ -873,6 +898,11 @@ def judge_item(
     tau = cfg.tau.get(tau_method_key, {}).get(mode, ThresholdPair())
 
     packet = build_packet(cand, mode, "jev", cfg)
+    if verbose:
+        print(
+            f"[Stage 2] EvidencePacket(tier=jev, n_cells={packet.n_cells}, "
+            f"n_tokens={packet.n_tokens}, required_met={packet.required_met}, truncated={packet.truncated})"
+        )
     calls: list[ModelCall] = []
     esc_reason = "exceeds_jev_tier"
 
@@ -884,6 +914,8 @@ def judge_item(
         }
         jev_call = call_model("jev", "jev", cfg.jev_model, jev_req, qs, ctx)
         calls.append(jev_call)
+        if verbose:
+            print(f"[Stage 3] Jev qs={qs}, outcome={jev_call.outcome}, answers={jev_call.answers}")
         if jev_call.outcome != "ok" or jev_call.answers is None:
             return _make_abstain(
                 trace.trace_id,
@@ -922,6 +954,8 @@ def judge_item(
                 packet_sha256=packet.packet_sha256,
             )
         esc_reason = v_reason or "uncertain_or_conflict"
+        if verbose:
+            print(f"[Stage 3] Jev decision -> {dec} (reason={v_reason})")
 
     if method == "B6" or (not escalation):
         abst_reason = "uncertain" if packet.required_met else "evidence_exceeds_bound"

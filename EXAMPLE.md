@@ -144,3 +144,18 @@ This guide walks through how every evaluation method in `txt2sql-eval-harness` p
 | **`B-IBM-subset`** | Checks subset/superset match across column permutations (`0` rows vs `3` rows) → `INCORRECT`. |
 | **`B-IBM-judge`** | Formats both multi-column tables as Markdown and sends them to `gemini-4-argon`. |
 | **`B4`** | Packs the full `3x3` and `0x3` tables into `<<DATA>>` (truncating rows via binary search only if >`100,000` tokens) and sends to `gemini-4-argon`. |
+
+---
+
+## Exact Python Inputs & Outputs (`judge_item` Offline Run)
+
+Running `judge_item(item.trace, item.gt, method="H+E", ctx=CallContext(cfg=EvalConfig(local_only=True), allow_remote=False))` on the three examples above produces:
+
+```text
+S2__bird_minidev:1471__agg_swap__0    -> label=INCORRECT, decided_by=rule:D4,  reason=scalar_counterexample
+S2__bird_minidev:1457__agg_swap__0    -> label=INCORRECT, decided_by=rule:D2,  reason=no_data
+S3m__bird_minidev:1471__early_support -> label=ABSTAIN,   decided_by=abstain,  reason=remote_disabled
+```
+
+- **Why this matters**: Both `S2` SQL bugs are caught deterministically in Stage 1 (`$0.00` cost, 0 LLM calls), while `S3m` (which requires grading natural-language `final_answer` against multi-step SQL evidence) cleanly progresses to Stage 3–4 (and abstains only because `allow_remote=False` in offline mode).
+- See [notebooks/he_walkthrough.ipynb](notebooks/he_walkthrough.ipynb) for a runnable, step-by-step Python notebook.

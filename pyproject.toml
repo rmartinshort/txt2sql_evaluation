@@ -24,12 +24,22 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+langchain = [
+    "langchain>=0.3",
+    "langchain-community>=0.3",
+    "langchain-google-genai>=2.0",
+    "sqlalchemy>=2.0",
+]
 
 [project.scripts]
 txt2sql-judge = "txt2sql_eval_harness.cli:main"
+genie-orchestrator = "generator_agents.genie.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"generator_agents.genie" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
